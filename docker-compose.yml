@@ -1,0 +1,32 @@
+# Use Docker Compose file format 3.7.
+version: '3.7'
+
+# Define the services that make up the application stack.
+services:
+# Application service.
+  item-app:
+# Use the image stored in GitHub Container Registry.
+    image: ghcr.io/ivanrafli14/item-app:v1
+# Map host port 80 to the container port used by the app.
+    ports:
+      - "80:80"
+# Start the application only after the database service is declared.
+    depends_on:
+      - item-db
+# Always restart the app container when it stops.
+    restart: always
+
+# Database service.
+  item-db:
+# Use MongoDB version 3 from Docker Hub.
+    image: mongo:3
+# Persist MongoDB data in the named volume.
+    volumes:
+      - app-db:/data/db
+# Always restart the database container when it stops.
+    restart: always
+
+# Declare the named volume used by MongoDB.
+volumes:
+# Persistent storage for the database files.
+  app-db:
