@@ -1,0 +1,55 @@
+name: CI Backend
+
+on:
+  push:
+    branches:
+      - karsajobs
+  pull_request:
+    branches:
+      - karsajobs
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/ivanrafli14/karsajobs
+
+jobs:
+  backend:
+    name: backend-karsajobs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install hadolint
+        run: |
+          curl -sSL -o hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/hadolint
+
+      - name: lint-dockerfile
+        run: hadolint Dockerfile
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: test-app
+        run: go test -v -short --count=1 $(go list ./...)
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build-app-karsajobs
+        run: |
+          docker build -t $BACKEND_IMAGE:${GITHUB_SHA} -t $BACKEND_IMAGE:latest .
+          docker push $BACKEND_IMAGE:${GITHUB_SHA}
+          docker push $BACKEND_IMAGE:latest
