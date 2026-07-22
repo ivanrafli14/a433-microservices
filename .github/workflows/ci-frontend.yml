@@ -1,0 +1,47 @@
+name: CI Frontend
+
+on:
+  push:
+    branches:
+      - karsajobs-ui
+  pull_request:
+    branches:
+      - karsajobs-ui
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ghcr.io/ivanrafli14/karsajobs-ui
+
+jobs:
+  frontend:
+    name: frontend-karsajobs-ui
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install hadolint
+        run: |
+          curl -sSL -o hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/hadolint
+
+      - name: lint-dockerfile
+        run: hadolint Dockerfile
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build-app-karsajobs-ui
+        run: |
+          docker build -t $FRONTEND_IMAGE:${GITHUB_SHA} -t $FRONTEND_IMAGE:latest .
+          docker push $FRONTEND_IMAGE:${GITHUB_SHA}
+          docker push $FRONTEND_IMAGE:latest
